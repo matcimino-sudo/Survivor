@@ -1,0 +1,1868 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tribal Tally</title><meta name="claude:viewport-fit-sides" content="cover"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap"><style id="page-style">/* Layout: torch-lit night hero band, tab bar, then one 1040px column (podium, standings list, castaway cards, rules).
+   Deliberately one look (night at tribal council), so there is no light theme. */
+:root {
+  --night: #0c1310; --canopy: #142019; --canopy-2: #1b2a21; --line: #2b3d31;
+  --sand: #eee2c6; --sand-dim: #a9a088; --flame: #ff7a2f; --ember: #ffb547; --lagoon: #3fb8a8;
+  --orchid: #c39be6; --clay: #e0684b; --ash: #6b746c;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--night); color: var(--sand); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--display); line-height: 1; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
+h2 { font-size: clamp(30px, 5vw, 40px); font-weight: 800; text-transform: uppercase; }
+h3 { font-size: 22px; font-weight: 800; text-transform: uppercase; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ember); font-weight: 700; }
+.muted { color: var(--sand-dim); }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--ember); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; border-radius: 4px; }
+
+/* Bamboo divider: a row of culms with nodes */
+.bamboo { height: 10px; border-radius: 5px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 58px, rgba(0,0,0,.45) 58px 61px),
+    linear-gradient(180deg, #c9a45a, #8a6a2c); opacity: .85; }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+  padding-top: calc(env(safe-area-inset-top, 0px) + 40px); padding-bottom: 36px;
+  background:
+    radial-gradient(420px 300px at 8% 100%, rgba(255,122,47,.28), transparent 70%),
+    radial-gradient(420px 300px at 92% 100%, rgba(255,122,47,.24), transparent 70%),
+    linear-gradient(180deg, #08100c 0%, #10211a 70%, #142019 100%); }
+.hero .col { position: relative; display: grid; gap: 22px; }
+.brand { display: flex; align-items: flex-end; gap: 14px; }
+.brand svg { width: 34px; height: 68px; flex: none; }
+.wordmark { font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: .82;
+  font-size: clamp(56px, 13vw, 120px); letter-spacing: 0.005em; margin: 0;
+  background: linear-gradient(180deg, #ffe2a8 0%, var(--ember) 45%, var(--flame) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tagline { font-size: 17px; color: var(--sand); max-width: 60ch; }
+.tagline b { color: var(--ember); font-weight: 700; }
+.leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.leader { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+  background: rgba(20,32,25,.75); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.leader .icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--canopy-2); }
+.leader .icon svg { width: 24px; height: 24px; }
+.leader .who { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1.05; text-transform: uppercase; }
+.leader .pts { font-family: var(--display); font-weight: 800; font-size: 30px; color: var(--ember); }
+.leader .pts small { font-size: 14px; color: var(--sand-dim); margin-left: 2px; }
+
+.flame { transform-origin: 50% 90%; }
+@media (prefers-reduced-motion: no-preference) {
+  .flame { animation: flicker 2.6s ease-in-out infinite; }
+  @keyframes flicker { 0%,100% { transform: scale(1,1) } 30% { transform: scale(.94,1.05) } 60% { transform: scale(1.04,.96) } }
+}
+
+/* Tabs */
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: rgba(12,19,16,.92);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
+.tabs .col { display: flex; gap: 4px; overflow-x: auto; }
+.tabs a { flex: none; padding: 14px 14px 12px; color: var(--sand-dim); text-decoration: none; font-weight: 700;
+  font-size: 14px; text-transform: uppercase; letter-spacing: .08em; border-bottom: 3px solid transparent; }
+.tabs a[aria-current="page"] { color: var(--sand); border-bottom-color: var(--flame); }
+.tabs a:hover { color: var(--sand); }
+
+main.col { display: grid; gap: 40px; padding-block: 32px 64px; }
+section { display: grid; gap: 16px; }
+.sechead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px 16px; }
+
+/* Podium */
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.step { display: grid; gap: 10px; align-content: end; text-align: center; }
+.step .names { font-family: var(--display); font-weight: 800; font-size: clamp(20px, 3.4vw, 28px); text-transform: uppercase; line-height: 1.05; }
+.step .score { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 5vw, 40px); color: var(--ember); }
+.block { border-radius: 10px 10px 4px 4px; display: grid; place-items: center; font-family: var(--display); font-weight: 900;
+  font-size: clamp(34px, 7vw, 56px); color: rgba(12,19,16,.75);
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,.0) 0 22%, rgba(0,0,0,.22) 22% 23.5%), linear-gradient(180deg, #d8b468, #9a7432); }
+.step.p1 .block { height: 128px; } .step.p2 .block { height: 96px; } .step.p3 .block { height: 72px; }
+.step.p1 { order: 2; } .step.p2 { order: 1; } .step.p3 { order: 3; }
+
+/* Standings list */
+.board { display: grid; gap: 8px; }
+.entry { background: var(--canopy); border: 1px solid var(--line); border-radius: 12px; }
+.entry > button { width: 100%; background: none; border: 0; text-align: left; padding: 12px 14px;
+  display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; }
+.rank { font-family: var(--display); font-weight: 900; font-size: 30px; line-height: 1; text-align: center; }
+.move { display: block; font-family: var(--body); font-size: 11px; font-weight: 700; margin-top: 2px; }
+.move.up { color: var(--lagoon); } .move.down { color: var(--clay); } .move.same { color: var(--ash); }
+.who { display: grid; gap: 6px; min-width: 0; }
+.who .name { font-weight: 700; font-size: 17px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: baseline; gap: 6px; font-size: 13px; padding: 2px 9px 3px; border-radius: 999px;
+  background: var(--canopy-2); border: 1px solid var(--line); white-space: nowrap; }
+.chip .t { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.chip .p { color: var(--sand-dim); font-variant-numeric: tabular-nums; }
+.chip.savu .t { color: var(--lagoon); } .chip.toka .t { color: var(--ember); }
+.chip.wild .t { color: var(--orchid); } .chip.merge .t { color: var(--flame); }
+.chip.merge { border-color: rgba(255,122,47,.45); }
+.out { color: var(--ash); text-decoration: line-through; text-decoration-thickness: 1px; }
+.score-col { display: grid; justify-items: end; gap: 4px; }
+.total { font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1; color: var(--sand); }
+.torches { display: flex; gap: 3px; }
+.torches svg { width: 12px; height: 24px; }
+.detail { border-top: 1px solid var(--line); padding: 14px; display: grid; gap: 10px; }
+.bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); gap: 6px; align-items: end; height: 120px; overflow-x: auto; }
+.bar { display: grid; grid-template-rows: auto 1fr auto; justify-items: center; height: 100%; font-size: 12px; }
+.bar .v { color: var(--sand); font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar .fill { align-self: end; width: 70%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--ember), var(--flame)); min-height: 2px; }
+.bar.post .fill { background: linear-gradient(180deg, #ffd08a, var(--clay)); }
+.bar .e { color: var(--sand-dim); }
+
+/* Castaways */
+.castgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.cast { background: var(--canopy); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+.cast .top { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.cast .nm { font-family: var(--display); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1; }
+.cast .tot { font-family: var(--display); font-weight: 900; font-size: 32px; color: var(--ember); line-height: 1; }
+.cast.isout { background: transparent; }
+.cast.isout .nm, .cast.isout .tot { color: var(--ash); }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.status svg { width: 9px; height: 18px; }
+.status.in { color: var(--lagoon); } .status.gone { color: var(--ash); }
+.split { display: flex; gap: 14px; font-size: 13px; color: var(--sand-dim); }
+.split b { color: var(--sand); font-variant-numeric: tabular-nums; }
+
+/* Rules */
+.rulegroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.rulegroup { background: var(--canopy); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.rulegroup ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rulegroup li { display: grid; grid-template-columns: 44px 1fr; gap: 10px; font-size: 14px; }
+.pv { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1.1; color: var(--ember); }
+.pv.neg { color: var(--clay); }
+.howto { background: var(--canopy-2); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; max-width: 75ch; }
+.howto p { margin: 0; }
+
+footer.col { padding-block: 0 48px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; color: var(--sand-dim); font-size: 13px; }
+
+/* Admin */
+.btn { font-weight: 700; border-radius: 8px; border: 1px solid var(--line); background: var(--canopy-2); color: var(--sand); padding: 8px 14px; }
+.btn.primary { background: var(--flame); border-color: var(--flame); color: #1a0c04; }
+.btn:disabled { opacity: .45; cursor: default; }
+.panel { background: var(--canopy); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; }
+.login { max-width: 400px; }
+.login form { display: grid; gap: 10px; }
+.login input { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--night); color: var(--sand); }
+.err { color: var(--clay); font-weight: 700; }
+.ok { color: var(--lagoon); font-weight: 700; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tab { padding: 6px 12px; border-radius: 999px; font-weight: 700; }
+.tab[aria-pressed="true"] { background: var(--sand); color: var(--night); border-color: var(--sand); }
+.vote { border-radius: 999px; padding: 4px 12px; font-weight: 600; }
+.vote[aria-pressed="true"] { background: var(--clay); border-color: var(--clay); color: #1a0c04; }
+.scroll { overflow-x: auto; background: var(--canopy); border: 1px solid var(--line); border-radius: 12px; }
+table.grid { border-collapse: collapse; width: 100%; }
+.grid td, .grid th { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.grid th.c { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 13px; font-weight: 700; padding: 10px 4px; vertical-align: bottom; text-align: left; }
+.grid .rule { position: sticky; left: 0; background: var(--canopy); min-width: 220px; max-width: 300px; font-size: 13px; line-height: 1.3; z-index: 1; text-align: left; }
+.grid .rule .pv { display: inline-block; min-width: 2.4em; font-size: 16px; margin-right: 6px; }
+.grid tr.group td { background: var(--canopy-2); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-dim); }
+.grid input { width: 2.6em; font: inherit; font-variant-numeric: tabular-nums; text-align: center; padding: 4px 2px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--night); color: var(--sand); }
+.grid input.has { background: var(--flame); border-color: var(--flame); color: #1a0c04; font-weight: 800; }
+.grid tfoot td { font-family: var(--display); font-weight: 800; font-size: 18px; text-align: center; border-top: 2px solid var(--ember); border-bottom: 0; }
+.grid tfoot td.rule { font-family: var(--body); font-size: 13px; }
+.savebar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--canopy); border-top: 1px solid var(--line); z-index: 5;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.savebar .inner { max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.adminwrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 110px; display: grid; gap: 20px; }
+
+@media (max-width: 560px) {
+  .entry > button { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px; }
+  .rank { font-size: 24px; } .total { font-size: 28px; }
+  .podium { gap: 8px; }
+}
+</style><div id="app"></div><script type="application/json" id="season-data">{
+ "season": 51,
+ "firstScoredEpisode": 2,
+ "mergeEpisode": 8,
+ "rules": [
+  {
+   "id": "each-week-your-castaway-survives",
+   "label": "Each week your castaway survives.",
+   "points": 5
+  },
+  {
+   "id": "votes-correctly-at-tribal-council",
+   "label": "Your castway votes correctly at Tribal Council.",
+   "points": 5
+  },
+  {
+   "id": "wins-a-group-rewards-challenge",
+   "label": "Your castaway wins a group Rewards Challenge.",
+   "points": 5
+  },
+  {
+   "id": "gets-chosen-to-go-on-reward",
+   "label": "Your castaway gets chosen to go on Reward.",
+   "points": 5
+  },
+  {
+   "id": "finds-gets-an-advantage",
+   "label": "Your castaway finds/gets an advantage.",
+   "points": 5
+  },
+  {
+   "id": "reads-treemail-boatmail",
+   "label": "Your castaway reads Treemail/Boatmail.",
+   "points": 5
+  },
+  {
+   "id": "is-chosen-to-go-on-a-journey",
+   "label": "Your castaway is chosen to go on a Journey.",
+   "points": 5
+  },
+  {
+   "id": "cries-on-camera-limit-once-per-scene",
+   "label": "Your castaway cries on camera (limit once per scene).",
+   "points": 5
+  },
+  {
+   "id": "says-resume-or-big-move",
+   "label": "Your castaway says \"resume\" or \"big move\"",
+   "points": 5
+  },
+  {
+   "id": "wins-an-individual-reward-challenge",
+   "label": "Your castaway wins an individual Reward Challenge.",
+   "points": 10
+  },
+  {
+   "id": "wins-a-group-immunity-challenge",
+   "label": "Your castaway wins a group Immunity Challenge.",
+   "points": 10
+  },
+  {
+   "id": "plays-an-advantage",
+   "label": "Your castaway plays an advantage.",
+   "points": 10
+  },
+  {
+   "id": "finds-a-hidden-immunity-idol",
+   "label": "Your castaway finds a Hidden Immunity Idol.",
+   "points": 10
+  },
+  {
+   "id": "makes-a-fire",
+   "label": "Your castaway makes a fire.",
+   "points": 10
+  },
+  {
+   "id": "catches-seafood-or-wildlife-limit-once-per-scene",
+   "label": "Your castaway catches seafood or wildlife (limit once per scene).",
+   "points": 10
+  },
+  {
+   "id": "jeff-says-that-s-how-you-do-it-on-survivor-to-so",
+   "label": "Jeff says \"That's how you do it on Survivor!\" to something your castaway does.",
+   "points": 10
+  },
+  {
+   "id": "has-the-first-confessional-of-the-episode",
+   "label": "Your castaway has the first confessional of the episode",
+   "points": 10
+  },
+  {
+   "id": "inspires-says-the-episode-title",
+   "label": "Your castaway inspires/says the episode title.",
+   "points": 10
+  },
+  {
+   "id": "comes-in-3rd-place",
+   "label": "Your castaway comes in 3rd place.",
+   "points": 15
+  },
+  {
+   "id": "wins-an-individual-immunity-challenge",
+   "label": "Your castaway wins an individual Immunity Challenge.",
+   "points": 15
+  },
+  {
+   "id": "plays-a-hidden-immunity-idol-on-themselves-someo",
+   "label": "Your castaway plays a Hidden Immunity Idol on themselves/someone at a Tribal when they were getting voted out.",
+   "points": 15
+  },
+  {
+   "id": "creates-a-fake-immunity-idol",
+   "label": "Your castaway creates a fake Immunity Idol.",
+   "points": 15
+  },
+  {
+   "id": "eavesdrops-spies-on-others",
+   "label": "Your castaway eavesdrops/spies on others.",
+   "points": 15
+  },
+  {
+   "id": "searches-through-another-player-s-belongings",
+   "label": "Your castaway searches through another player's belongings.",
+   "points": 15
+  },
+  {
+   "id": "score-25-points-if-your-castaway-draws-a-safe-sc",
+   "label": "Score 25 points if your castaway draws a SAFE scroll after playing their Shot in the Dark.",
+   "points": 25
+  },
+  {
+   "id": "score-25-points-if-your-castaway-comes-in-2nd-pl",
+   "label": "Score 25 points if your castaway comes in 2nd place.",
+   "points": 25
+  },
+  {
+   "id": "score-50-points-if-your-castaway-wins-the-game",
+   "label": "Score 50 points if your castaway wins the game.",
+   "points": 50
+  },
+  {
+   "id": "sits-out-of-a-challenge",
+   "label": "Sits out of a challenge",
+   "points": -5
+  },
+  {
+   "id": "loses-their-vote-per-week",
+   "label": "Loses their vote (per week)",
+   "points": -5
+  },
+  {
+   "id": "incorrectly-plays-an-immunity-idol",
+   "label": "Incorrectly plays an immunity idol",
+   "points": -10
+  },
+  {
+   "id": "gets-voted-off-with-a-hidden-immunity-idol-in-th",
+   "label": "Gets voted off with a hidden Immunity Idol in their possession.",
+   "points": -15
+  },
+  {
+   "id": "quits",
+   "label": "Quits",
+   "points": -15
+  },
+  {
+   "id": "plays-a-fake-hidden-immunity-idol-at-a-tribal-co",
+   "label": "Plays a fake Hidden Immunity Idol at a Tribal Council.",
+   "points": -20
+  }
+ ],
+ "castaways": [
+  {
+   "name": "Aaliyah",
+   "eliminatedEpisode": 1
+  },
+  {
+   "name": "Alexis",
+   "eliminatedEpisode": 5
+  },
+  {
+   "name": "Ana",
+   "eliminatedEpisode": 2
+  },
+  {
+   "name": "Brady",
+   "eliminatedEpisode": 7
+  },
+  {
+   "name": "Carter",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Cristian",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Devin",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Eric",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Jelly",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Jenna",
+   "eliminatedEpisode": 4
+  },
+  {
+   "name": "Kilby",
+   "eliminatedEpisode": 8
+  },
+  {
+   "name": "Kristin",
+   "eliminatedEpisode": 8
+  },
+  {
+   "name": "Lewis",
+   "eliminatedEpisode": 9
+  },
+  {
+   "name": "Linnea",
+   "eliminatedEpisode": 5
+  },
+  {
+   "name": "Maggie",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Mike",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Ori",
+   "eliminatedEpisode": 6
+  },
+  {
+   "name": "Patt",
+   "eliminatedEpisode": 3
+  },
+  {
+   "name": "Rob",
+   "eliminatedEpisode": 3
+  },
+  {
+   "name": "Sharonda",
+   "eliminatedEpisode": null
+  },
+  {
+   "name": "Thien An",
+   "eliminatedEpisode": null
+  }
+ ],
+ "entrants": [
+  {
+   "name": "Ryan B",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Mike",
+    "wildcard": "Kilby",
+    "merge": [
+     "Lewis",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Katrina W",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Jelly",
+    "wildcard": "Lewis",
+    "merge": [
+     "Jelly",
+     "Kristin"
+    ]
+   }
+  },
+  {
+   "name": "Lorrie R",
+   "picks": {
+    "savu": "Linnea",
+    "toka": "Jelly",
+    "wildcard": "Mike",
+    "merge": [
+     "Devin",
+     "Jelly"
+    ]
+   }
+  },
+  {
+   "name": "Sara G",
+   "picks": {
+    "savu": "Ori",
+    "toka": "Devin",
+    "wildcard": "Jelly",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Steph P",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Mike",
+    "wildcard": "Jenna",
+    "merge": [
+     "Lewis",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Hilary C",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Mike",
+    "wildcard": "Jenna",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Chris R",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Jenna",
+    "wildcard": "Jelly",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Vanessa K",
+   "picks": {
+    "savu": "Linnea",
+    "toka": "Mike",
+    "wildcard": "Carter",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Brant V",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Jenna",
+    "wildcard": "Carter",
+    "merge": [
+     "Carter",
+     "Jelly"
+    ]
+   }
+  },
+  {
+   "name": "Anita P",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Kilby",
+    "wildcard": "Sharonda",
+    "merge": [
+     "Kristin",
+     "Thien An"
+    ]
+   }
+  },
+  {
+   "name": "Nicole B",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Maggie",
+    "wildcard": "Rob",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Matt C",
+   "picks": {
+    "savu": "Ori",
+    "toka": "Jenna",
+    "wildcard": "Devin",
+    "merge": [
+     "Jelly",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Jessie R",
+   "picks": {
+    "savu": "Rob",
+    "toka": "Lewis",
+    "wildcard": "Jelly",
+    "merge": [
+     "Jelly",
+     "Maggie"
+    ]
+   }
+  },
+  {
+   "name": "Corissia V-P",
+   "picks": {
+    "savu": "Sharonda",
+    "toka": "Thien An",
+    "wildcard": "Ori",
+    "merge": [
+     "Sharonda",
+     "Thien An"
+    ]
+   }
+  },
+  {
+   "name": "Juliana V",
+   "picks": {
+    "savu": "Sharonda",
+    "toka": "Patt",
+    "wildcard": "Lewis",
+    "merge": [
+     "Kilby",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Shannon M",
+   "picks": {
+    "savu": "Linnea",
+    "toka": "Mike",
+    "wildcard": "Patt",
+    "merge": [
+     "Lewis",
+     "Sharonda"
+    ]
+   }
+  },
+  {
+   "name": "Judy C",
+   "picks": {
+    "savu": "Kristin",
+    "toka": "Mike",
+    "wildcard": "Rob",
+    "merge": [
+     "Jelly",
+     "Kristin"
+    ]
+   }
+  },
+  {
+   "name": "Rick M",
+   "picks": {
+    "savu": "Ori",
+    "toka": "Patt",
+    "wildcard": "Jelly",
+    "merge": [
+     "Carter",
+     "Maggie"
+    ]
+   }
+  },
+  {
+   "name": "Joanna H",
+   "picks": {
+    "savu": "Linnea",
+    "toka": "Jelly",
+    "wildcard": "Ana",
+    "merge": [
+     "Jelly",
+     "Thien An"
+    ]
+   }
+  }
+ ],
+ "episodes": [
+  {
+   "number": 2,
+   "events": {
+    "Alexis": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Brady": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "cries-on-camera-limit-once-per-scene": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "catches-seafood-or-wildlife-limit-once-per-scene": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1,
+     "inspires-says-the-episode-title": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "finds-a-hidden-immunity-idol": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Jenna": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Linnea": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Ori": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Patt": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Rob": {
+     "each-week-your-castaway-survives": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    }
+   }
+  },
+  {
+   "number": 3,
+   "events": {
+    "Alexis": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Brady": {
+     "each-week-your-castaway-survives": 1,
+     "finds-gets-an-advantage": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "finds-a-hidden-immunity-idol": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "finds-gets-an-advantage": 1,
+     "reads-treemail-boatmail": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "inspires-says-the-episode-title": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Jenna": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "searches-through-another-player-s-belongings": 1
+    },
+    "Linnea": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "reads-treemail-boatmail": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "finds-gets-an-advantage": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Ori": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Rob": {
+     "quits": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    }
+   }
+  },
+  {
+   "number": 4,
+   "events": {
+    "Alexis": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "reads-treemail-boatmail": 1,
+     "makes-a-fire": 1
+    },
+    "Brady": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "inspires-says-the-episode-title": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Linnea": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "reads-treemail-boatmail": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Ori": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    }
+   }
+  },
+  {
+   "number": 5,
+   "events": {
+    "Brady": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "reads-treemail-boatmail": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 2,
+     "cries-on-camera-limit-once-per-scene": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 2,
+     "creates-a-fake-immunity-idol": 1
+    },
+    "Linnea": {
+     "inspires-says-the-episode-title": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "finds-gets-an-advantage": 1,
+     "reads-treemail-boatmail": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Ori": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "wins-a-group-immunity-challenge": 1
+    }
+   }
+  },
+  {
+   "number": 6,
+   "events": {
+    "Brady": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "inspires-says-the-episode-title": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "reads-treemail-boatmail": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "finds-a-hidden-immunity-idol": 1,
+     "makes-a-fire": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "reads-treemail-boatmail": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Ori": {
+     "is-chosen-to-go-on-a-journey": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "reads-treemail-boatmail": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-immunity-challenge": 1,
+     "sits-out-of-a-challenge": 1
+    }
+   }
+  },
+  {
+   "number": 7,
+   "events": {
+    "Brady": {
+     "wins-an-individual-reward-challenge": 1,
+     "inspires-says-the-episode-title": 1
+    },
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Kilby": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Kristin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1,
+     "wins-an-individual-reward-challenge": 1,
+     "wins-an-individual-immunity-challenge": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-an-individual-reward-challenge": 1
+    }
+   }
+  },
+  {
+   "number": 8,
+   "events": {
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "inspires-says-the-episode-title": 1,
+     "score-25-points-if-your-castaway-draws-a-safe-sc": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "finds-gets-an-advantage": 1,
+     "is-chosen-to-go-on-a-journey": 1,
+     "score-25-points-if-your-castaway-draws-a-safe-sc": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "votes-correctly-at-tribal-council": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "jeff-says-that-s-how-you-do-it-on-survivor-to-so": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1,
+     "gets-chosen-to-go-on-reward": 1,
+     "plays-an-advantage": 1,
+     "plays-a-hidden-immunity-idol-on-themselves-someo": 1
+    },
+    "Kristin": {
+     "gets-chosen-to-go-on-reward": 1
+    },
+    "Lewis": {
+     "each-week-your-castaway-survives": 1,
+     "reads-treemail-boatmail": 1,
+     "wins-an-individual-reward-challenge": 1,
+     "wins-an-individual-immunity-challenge": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "has-the-first-confessional-of-the-episode": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1,
+     "wins-an-individual-reward-challenge": 1,
+     "wins-an-individual-immunity-challenge": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    }
+   }
+  },
+  {
+   "number": 9,
+   "events": {
+    "Carter": {
+     "each-week-your-castaway-survives": 1,
+     "wins-an-individual-immunity-challenge": 1
+    },
+    "Cristian": {
+     "each-week-your-castaway-survives": 1,
+     "cries-on-camera-limit-once-per-scene": 1
+    },
+    "Devin": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "has-the-first-confessional-of-the-episode": 1,
+     "creates-a-fake-immunity-idol": 1
+    },
+    "Eric": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1,
+     "reads-treemail-boatmail": 1,
+     "cries-on-camera-limit-once-per-scene": 1,
+     "inspires-says-the-episode-title": 1
+    },
+    "Jelly": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Lewis": {
+     "wins-a-group-rewards-challenge": 1
+    },
+    "Maggie": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Mike": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1
+    },
+    "Sharonda": {
+     "each-week-your-castaway-survives": 1
+    },
+    "Thien An": {
+     "each-week-your-castaway-survives": 1,
+     "wins-a-group-rewards-challenge": 1
+    }
+   }
+  },
+  {
+   "number": 10,
+   "events": {}
+  }
+ ]
+}</script><script id="engine">window.Scoring = (function () {
+// Fantasy Survivor scoring engine. Pure functions over season.json; no DOM, no I/O,
+// so the same file runs in Node (tests) and in the browser (the site).
+//
+// Scoring model (matches the spreadsheet):
+//  - A castaway's episode score = sum(rule points x times it happened).
+//  - Pre-merge episodes (firstScoredEpisode .. mergeEpisode-1): an entrant scores
+//    the Savu, Toka and Wildcard picks.
+//  - Post-merge episodes (mergeEpisode onward): an entrant scores the two Merge picks.
+//  - Standings rank by total, ties share a rank (1, 1, 3 ...).
+
+function validate(season) {
+  const errors = [];
+  const ruleIds = new Set(season.rules.map(r => r.id));
+  const names = new Set(season.castaways.map(c => c.name));
+  if (ruleIds.size !== season.rules.length) errors.push("duplicate rule id");
+  if (names.size !== season.castaways.length) errors.push("duplicate castaway name");
+  const seen = new Set();
+  for (const e of season.entrants) {
+    if (seen.has(e.name)) errors.push(`duplicate entrant ${e.name}`);
+    seen.add(e.name);
+    const { savu, toka, wildcard, merge } = e.picks;
+    for (const p of [savu, toka, wildcard, ...(merge || [])]) {
+      if (p != null && !names.has(p)) errors.push(`${e.name}: unknown castaway "${p}"`);
+    }
+    if (merge && merge[0] && merge[0] === merge[1]) errors.push(`${e.name}: same castaway picked twice at merge`);
+  }
+  for (const ep of season.episodes) {
+    for (const [who, counts] of Object.entries(ep.events)) {
+      if (!names.has(who)) errors.push(`Episode ${ep.number}: unknown castaway "${who}"`);
+      for (const [rid, n] of Object.entries(counts)) {
+        if (!ruleIds.has(rid)) errors.push(`Episode ${ep.number}: unknown rule "${rid}"`);
+        if (!Number.isInteger(n) || n < 0) errors.push(`Episode ${ep.number}: bad count ${n} for ${who}/${rid}`);
+      }
+    }
+  }
+  return errors;
+}
+
+const isPostMerge = (season, n) => n >= season.mergeEpisode;
+const scoredEpisodes = season =>
+  season.episodes.filter(e => e.number >= season.firstScoredEpisode);
+
+// Latest episode that has any scoring recorded (an empty sheet doesn't count).
+function latestScoredEpisode(season) {
+  const done = scoredEpisodes(season).filter(e => Object.keys(e.events).length);
+  return done.length ? done[done.length - 1].number : null;
+}
+
+// { castaway: { episodeNumber: points } } for every castaway and scored episode.
+function castawayEpisodePoints(season) {
+  const pts = Object.fromEntries(season.rules.map(r => [r.id, r.points]));
+  const out = {};
+  for (const c of season.castaways) out[c.name] = {};
+  for (const ep of scoredEpisodes(season)) {
+    for (const c of season.castaways) {
+      const counts = ep.events[c.name] || {};
+      out[c.name][ep.number] = Object.entries(counts)
+        .reduce((s, [rid, n]) => s + (pts[rid] ?? 0) * n, 0);
+    }
+  }
+  return out;
+}
+
+// Per castaway: preMerge, postMerge, total, eliminatedEpisode, byEpisode.
+function castawayTotals(season) {
+  const byEp = castawayEpisodePoints(season);
+  return season.castaways.map(c => {
+    let pre = 0, post = 0;
+    for (const [n, p] of Object.entries(byEp[c.name])) {
+      if (isPostMerge(season, +n)) post += p; else pre += p;
+    }
+    return { name: c.name, eliminatedEpisode: c.eliminatedEpisode ?? null,
+             preMerge: pre, postMerge: post, total: pre + post, byEpisode: byEp[c.name] };
+  });
+}
+
+// Standard competition ranking on `key`, descending.
+function rank(rows, key) {
+  const sorted = [...rows].sort((a, b) => b[key] - a[key] || a.name.localeCompare(b.name));
+  sorted.forEach((r, i) => { r.rank = i && r[key] === sorted[i - 1][key] ? sorted[i - 1].rank : i + 1; });
+  return sorted;
+}
+
+// Full standings: one row per entrant, sorted, with weekly breakdown.
+function standings(season) {
+  const cast = Object.fromEntries(castawayTotals(season).map(c => [c.name, c]));
+  const get = n => cast[n] || { preMerge: 0, postMerge: 0, byEpisode: {}, eliminatedEpisode: null };
+  const rows = season.entrants.map(e => {
+    const { savu, toka, wildcard, merge = [] } = e.picks;
+    const prePicks = [savu, toka, wildcard];
+    const picks = {
+      savu: { castaway: savu, points: get(savu).preMerge },
+      toka: { castaway: toka, points: get(toka).preMerge },
+      wildcard: { castaway: wildcard, points: get(wildcard).preMerge },
+      merge: { castaways: merge, points: merge.reduce((s, m) => s + get(m).postMerge, 0) },
+    };
+    const byEpisode = {};
+    for (const ep of scoredEpisodes(season)) {
+      const team = isPostMerge(season, ep.number) ? merge : prePicks;
+      byEpisode[ep.number] = team.reduce((s, m) => s + (get(m).byEpisode[ep.number] ?? 0), 0);
+    }
+    const total = picks.savu.points + picks.toka.points + picks.wildcard.points + picks.merge.points;
+    const picksRemaining = merge.filter(m => m && get(m).eliminatedEpisode == null).length;
+    return { name: e.name, total, picks, byEpisode, picksRemaining };
+  });
+  return rank(rows, "total");
+}
+
+// Top castaway(s) and entrant(s) for one episode (defaults to the latest scored).
+// Returns arrays so ties are kept.
+function weeklyLeaders(season, episode = latestScoredEpisode(season)) {
+  if (episode == null) {
+    return { episode: null, survivorOfTheWeek: { points: 0, names: [] }, playerOfTheWeek: { points: 0, names: [] } };
+  }
+  const top = (rows, get) => {
+    const best = Math.max(...rows.map(get));
+    return { points: best, names: rows.filter(r => get(r) === best).map(r => r.name) };
+  };
+  return {
+    episode,
+    survivorOfTheWeek: top(castawayTotals(season), c => c.byEpisode[episode] ?? 0),
+    playerOfTheWeek: top(standings(season), s => s.byEpisode[episode] ?? 0),
+  };
+}
+
+return { validate, latestScoredEpisode, castawayEpisodePoints, castawayTotals, standings, weeklyLeaders };
+})();
+</script><script id="app-js">(function () {
+  "use strict";
+  // ---- Page source (the page republishes itself with new data; see renderDocument) ----
+  var SKELETON_OPEN = "<!doctype html><html><head><meta charset=utf8><meta name=viewport content=\"width=device-width,initial-scale=1,viewport-fit=cover\"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}<\/style><\/head><body>\n";
+  var SKELETON_CLOSE = "\n</body></html>";
+  var TITLE = "Tribal Tally";
+  var FONTS = "https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap";
+  // SHA-256 of the commissioner password. This only hides the scoring form;
+  // on claude.ai, saving is protected by the page's edit permission, not by this password.
+  var PASS_HASH = "75a939d90e8130a3a5059410d14c42487eb44b7783a53b8154828149d952709a";
+  var DRAFT_KEY = "tt-admin-draft";
+  var UNLOCK_KEY = "tt-admin-unlocked";
+
+  var S = window.Scoring;
+  var SRC = {
+    style: document.getElementById("page-style").textContent,
+    engine: document.getElementById("engine").textContent,
+    app: document.getElementById("app-js").textContent,
+  };
+  var season = JSON.parse(document.getElementById("season-data").textContent);
+  var root = document.getElementById("app");
+  var artifactCap = window.claude && window.claude.use ? window.claude.use("artifact") : Promise.resolve(null);
+
+  function renderDocument(data) {
+    var json = JSON.stringify(data, null, 1).replace(/</g, "\\u003c");
+    return SKELETON_OPEN +
+      "<title>" + TITLE + "</title>" +
+      '<meta name="claude:viewport-fit-sides" content="cover">' +
+      '<link rel="stylesheet" href="' + FONTS + '">' +
+      '<style id="page-style">' + SRC.style + "<\/style>" +
+      '<div id="app"></div>' +
+      '<script type="application/json" id="season-data">' + json + "<\/script>" +
+      '<script id="engine">' + SRC.engine + "<\/script>" +
+      '<script id="app-js">' + SRC.app + "<\/script>" +
+      SKELETON_CLOSE;
+  }
+
+  // ---- helpers ----
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === "class") el.className = v;
+      else if (k === "text") el.textContent = v;
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, kid) {
+    if (kid == null || kid === false) return;
+    if (Array.isArray(kid)) return kid.forEach(function (k) { append(el, k); });
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  // Static, trusted SVG markup only (icons defined below), never data.
+  function icon(markup) { var t = document.createElement("template"); t.innerHTML = markup; return t.content.firstChild; }
+  function store(kind, key, val) {
+    try {
+      var s = window[kind];
+      if (val === undefined) return s.getItem(key);
+      if (val === null) s.removeItem(key); else s.setItem(key, val);
+    } catch (e) { return null; }
+  }
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function shortRule(label) {
+    var s = label.replace(/^Your (castaway|castway) /, "").replace(/^Score \d+ points if your castaway /, "").replace(/\.$/, "");
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function fmt(n) { return n > 0 ? "+" + n : String(n); }
+  function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function joinNames(names) { return names.length < 3 ? names.join(" & ") : names.slice(0, -1).join(", ") + " & " + names[names.length - 1]; }
+
+  var TORCH_LIT = '<svg viewBox="0 0 12 24" aria-hidden="true"><g class="flame"><path d="M6 .5c1.7 2.6 4 4.4 4 7.2a4 4 0 0 1-8 0c0-1.7 1-2.8 1.7-4 .5 1.5 1.1 2.3 1.7 2.3C5 4.3 5.4 2.3 6 .5z" fill="#ff7a2f"/><path d="M6 4.2c.9 1.4 2 2.4 2 3.8a2 2 0 0 1-4 0c0-1 .6-1.6 1-2.3.4.5.6.8.9.8-.1-.8 0-1.6.1-2.3z" fill="#ffd27a"/></g><path d="M4.1 11.2h3.8l-.9 12.3H5z" fill="#b48a43"/><path d="M3.8 11h4.4v1.4H3.8z" fill="#6e5426"/></svg>';
+  var TORCH_OUT = '<svg viewBox="0 0 12 24" aria-hidden="true"><path d="M6.5 9.5c-1.2-1.2.9-2.2-.2-3.6M5.5 8c-.8-.9.5-1.6-.2-2.5" stroke="#6b746c" stroke-width=".8" fill="none" stroke-linecap="round"/><path d="M4.1 11.2h3.8l-.9 12.3H5z" fill="#4b5149"/><path d="M3.8 11h4.4v1.4H3.8z" fill="#363b35"/></svg>';
+  var TORCH_BIG = '<svg viewBox="0 0 34 68" aria-hidden="true"><g class="flame"><path d="M17 1c4.8 7.4 11.3 12.5 11.3 20.4a11.3 11.3 0 0 1-22.6 0c0-4.8 2.8-8 4.8-11.3 1.4 4.2 3.1 6.5 4.8 6.5C14.2 12.2 15.3 6.5 17 1z" fill="#ff7a2f"/><path d="M17 11.9c2.5 4 5.7 6.8 5.7 10.8a5.7 5.7 0 0 1-11.4 0c0-2.8 1.7-4.5 2.8-6.5 1.1 1.4 1.7 2.3 2.6 2.3-.3-2.3 0-4.5.3-6.6z" fill="#ffd27a"/></g><path d="M11.6 31.7h10.8L19.8 67h-5.6z" fill="#c9a45a"/><path d="M12.4 40h9.2M13 52h8" stroke="#7a5c25" stroke-width="1.4"/><path d="M10.8 31h12.4v4H10.8z" fill="#6e5426"/></svg>';
+  var ICON_NECKLACE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3c0 7 3.6 11 8 11s8-4 8-11" fill="none" stroke="#c9a45a" stroke-width="1.6" stroke-linecap="round"/><circle cx="6.2" cy="8.6" r="1.1" fill="#3fb8a8"/><circle cx="17.8" cy="8.6" r="1.1" fill="#3fb8a8"/><path d="M12 14l3.4 3.2L12 22l-3.4-4.8z" fill="#ffb547"/></svg>';
+  var ICON_SKULL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.7 0-8 3-8 7.3 0 2.6 1.3 4.3 3 5.3V19h10v-3.4c1.7-1 3-2.7 3-5.3C20 6 16.7 3 12 3z" fill="#eee2c6"/><circle cx="9" cy="11" r="1.9" fill="#142019"/><circle cx="15" cy="11" r="1.9" fill="#142019"/><path d="M10 19v2M14 19v2M12 19v2" stroke="#142019" stroke-width="1.2"/></svg>';
+
+  // ---- derived data ----
+  function seasonThrough(n) {
+    var s = clone(season);
+    s.episodes = s.episodes.filter(function (e) { return e.number <= n; });
+    return s;
+  }
+  function model() {
+    var latest = S.latestScoredEpisode(season);
+    var rows = S.standings(season);
+    var prevRank = {};
+    var prevEp = latest == null ? null : latest - 1;
+    if (prevEp != null && prevEp >= season.firstScoredEpisode) {
+      S.standings(seasonThrough(prevEp)).forEach(function (r) { prevRank[r.name] = r.rank; });
+    }
+    var out = {};
+    season.castaways.forEach(function (c) { out[c.name] = c.eliminatedEpisode; });
+    return { latest: latest, rows: rows, prevRank: prevRank, out: out,
+      cast: S.castawayTotals(season), lead: S.weeklyLeaders(season) };
+  }
+
+  // ---- public pages ----
+  var openRows = {};
+
+  function renderPublic(view) {
+    var m = model();
+    var still = season.castaways.filter(function (c) { return c.eliminatedEpisode == null; }).length;
+    var hero = h("header", { class: "hero gutter" }, h("div", { class: "col" },
+      h("div", { class: "brand" }, icon(TORCH_BIG), h("h1", { class: "wordmark", text: TITLE })),
+      h("p", { class: "tagline", style: "margin:0" },
+        "Season " + season.season + " fantasy pool · ",
+        m.latest ? ["Scored through ", h("b", { text: "Episode " + m.latest }), " · " + still + " castaways still holding a torch"] : "No episodes scored yet"),
+      m.lead.episode ? h("div", { class: "leaders" },
+        leaderCard(ICON_NECKLACE, "Survivor of the week · Ep " + m.lead.episode, m.lead.survivorOfTheWeek),
+        leaderCard(ICON_SKULL, "Player of the week · Ep " + m.lead.episode, m.lead.playerOfTheWeek)) : null,
+      h("div", { class: "bamboo", "aria-hidden": "true" })));
+    var tabs = h("nav", { class: "tabs gutter", "aria-label": "Sections" }, h("div", { class: "col" },
+      [["#standings", "Standings", "standings"], ["#castaways", "Castaways", "castaways"], ["#rules", "Scoring rules", "rules"]].map(function (t) {
+        return h("a", { href: t[0], "aria-current": view === t[2] ? "page" : null, text: t[1] });
+      })));
+    var body = view === "castaways" ? castawaysView(m) : view === "rules" ? rulesView() : standingsView(m);
+    root.replaceChildren(hero, tabs, h("main", { class: "col gutter" }, body),
+      h("footer", { class: "col gutter" },
+        h("span", { text: TITLE + " · " + season.entrants.length + " players · " + season.castaways.length + " castaways" }),
+        h("a", { href: "#admin", text: "Commissioner" })));
+  }
+
+  function leaderCard(svg, label, w) {
+    return h("div", { class: "leader" }, h("div", { class: "icon" }, icon(svg)),
+      h("div", null, h("div", { class: "eyebrow", text: label }), h("div", { class: "who", text: w.names.length ? joinNames(w.names) : "—" })),
+      h("div", { class: "pts num" }, String(w.points), h("small", { text: "pts" })));
+  }
+
+  function chip(cls, tag, name, pts, out) {
+    return h("span", { class: "chip " + cls }, h("span", { class: "t", text: tag }),
+      h("span", { class: out[name] != null ? "out" : "", text: name }), pts == null ? null : h("span", { class: "p", text: pts }));
+  }
+
+  function standingsView(m) {
+    var ranks = [];
+    m.rows.forEach(function (r) { if (ranks.indexOf(r.rank) < 0) ranks.push(r.rank); });
+    var podium = ranks.slice(0, 3).map(function (rk, i) {
+      var group = m.rows.filter(function (r) { return r.rank === rk; });
+      return h("div", { class: "step p" + (i + 1) },
+        h("div", { class: "names", text: joinNames(group.map(function (r) { return r.name; })) }),
+        h("div", { class: "score num", text: group[0].total }),
+        h("div", { class: "block", "aria-label": ordinal(rk) + " place", text: ordinal(rk) }));
+    });
+    var episodes = season.episodes.filter(function (e) { return e.number >= season.firstScoredEpisode && e.number <= (m.latest || 0); })
+      .map(function (e) { return e.number; });
+    var maxWeek = Math.max(1, Math.max.apply(null, m.rows.map(function (r) {
+      return Math.max.apply(null, episodes.map(function (n) { return r.byEpisode[n] || 0; }).concat([0]));
+    })));
+
+    return [
+      h("section", { "aria-labelledby": "podium-h" },
+        h("div", { class: "sechead" }, h("h2", { id: "podium-h", text: "Top of the tribe" })),
+        h("div", { class: "podium" }, podium)),
+      h("section", { "aria-labelledby": "board-h" },
+        h("div", { class: "sechead" }, h("h2", { id: "board-h", text: "Standings" }),
+          h("span", { class: "muted", text: "Tap a player for their week-by-week points. Torches are merge picks still in the game." })),
+        h("div", { class: "board" }, m.rows.map(function (r) {
+          var prev = m.prevRank[r.name], moveEl = null;
+          if (prev != null) {
+            var d = prev - r.rank;
+            moveEl = h("span", { class: "move " + (d > 0 ? "up" : d < 0 ? "down" : "same"),
+              text: d > 0 ? "▲" + d : d < 0 ? "▼" + (-d) : "–", title: d ? "Was " + ordinal(prev) + " last week" : "Same as last week" });
+          }
+          var open = !!openRows[r.name];
+          var detailId = "d-" + r.name.replace(/\W/g, "");
+          var mp = r.picks.merge;
+          return h("div", { class: "entry" },
+            h("button", { "aria-expanded": String(open), "aria-controls": detailId, onclick: function () { openRows[r.name] = !open; renderPublic("standings"); } },
+              h("div", { class: "rank num" }, String(r.rank), moveEl),
+              h("div", { class: "who" }, h("span", { class: "name", text: r.name }),
+                h("div", { class: "chips" },
+                  chip("savu", "Savu", r.picks.savu.castaway, r.picks.savu.points, m.out),
+                  chip("toka", "Toka", r.picks.toka.castaway, r.picks.toka.points, m.out),
+                  chip("wild", "Wild", r.picks.wildcard.castaway, r.picks.wildcard.points, m.out),
+                  h("span", { class: "chip merge" }, h("span", { class: "t", text: "Merge" }),
+                    mp.castaways.map(function (n, i) { return [i ? h("span", { class: "p", text: "+" }) : null, h("span", { class: m.out[n] != null ? "out" : "", text: n })]; }),
+                    h("span", { class: "p", text: mp.points })))),
+              h("div", { class: "score-col" }, h("span", { class: "total num", text: r.total }),
+                h("span", { class: "torches", "aria-label": r.picksRemaining + " of 2 merge picks still in the game" },
+                  [0, 1].map(function (i) { return icon(i < r.picksRemaining ? TORCH_LIT : TORCH_OUT); })))),
+            open ? h("div", { class: "detail", id: detailId },
+              h("div", { class: "eyebrow", text: "Points by episode" }),
+              h("div", { class: "bars" }, episodes.map(function (n) {
+                var v = r.byEpisode[n] || 0;
+                return h("div", { class: "bar" + (n >= season.mergeEpisode ? " post" : ""), title: "Episode " + n + ": " + v + " points" },
+                  h("span", { class: "v", text: v }),
+                  h("span", { class: "fill", style: "height:" + Math.max(2, Math.round(Math.max(0, v) / maxWeek * 100)) + "%" }),
+                  h("span", { class: "e", text: "E" + n }));
+              })),
+              h("div", { class: "muted", style: "font-size:13px", text: "Episodes " + season.firstScoredEpisode + "–" + (season.mergeEpisode - 1) +
+                " count Savu, Toka and Wildcard picks. From Episode " + season.mergeEpisode + " only the two merge picks count." })) : null);
+        })))
+    ];
+  }
+
+  function castawaysView(m) {
+    var pickedBy = {};
+    season.entrants.forEach(function (e) {
+      var p = e.picks, seen = {};
+      [p.savu, p.toka, p.wildcard].concat(p.merge || []).forEach(function (n) { if (n && !seen[n]) { seen[n] = 1; pickedBy[n] = (pickedBy[n] || 0) + 1; } });
+    });
+    var list = m.cast.slice().sort(function (a, b) {
+      var ai = a.eliminatedEpisode == null, bi = b.eliminatedEpisode == null;
+      if (ai !== bi) return ai ? -1 : 1;
+      if (!ai && a.eliminatedEpisode !== b.eliminatedEpisode) return b.eliminatedEpisode - a.eliminatedEpisode;
+      return b.total - a.total || a.name.localeCompare(b.name);
+    });
+    var inCount = list.filter(function (c) { return c.eliminatedEpisode == null; }).length;
+    return h("section", { "aria-labelledby": "cast-h" },
+      h("div", { class: "sechead" }, h("h2", { id: "cast-h", text: "Castaways" }),
+        h("span", { class: "muted", text: inCount + " still in the game · " + (list.length - inCount) + " torches snuffed" })),
+      h("div", { class: "castgrid" }, list.map(function (c) {
+        var gone = c.eliminatedEpisode != null;
+        return h("article", { class: "cast" + (gone ? " isout" : "") },
+          h("div", { class: "top" }, h("span", { class: "nm", text: c.name }), h("span", { class: "tot num", text: c.total })),
+          h("span", { class: "status " + (gone ? "gone" : "in") }, icon(gone ? TORCH_OUT : TORCH_LIT),
+            gone ? "Voted out · Ep " + c.eliminatedEpisode : "Still in the game"),
+          h("div", { class: "split" },
+            h("span", null, "Pre-merge ", h("b", { text: c.preMerge })),
+            h("span", null, "Post-merge ", h("b", { text: c.postMerge }))),
+          h("div", { class: "muted", style: "font-size:13px", text: pickedBy[c.name] ? "On " + pickedBy[c.name] + " player" + (pickedBy[c.name] === 1 ? "'s" : "s'") + " teams" : "Nobody picked them" }));
+      })));
+  }
+
+  function rulesView() {
+    var groups = [];
+    season.rules.forEach(function (r) {
+      var g = r.points < 0 ? "Penalties" : r.points >= 20 ? "Endgame & big moments" : r.points + "-point moments";
+      var last = groups[groups.length - 1];
+      if (!last || last.name !== g) groups.push(last = { name: g, rules: [] });
+      last.rules.push(r);
+    });
+    return h("section", { "aria-labelledby": "rules-h" },
+      h("div", { class: "sechead" }, h("h2", { id: "rules-h", text: "Scoring rules" })),
+      h("div", { class: "howto" },
+        h("p", null, h("b", { text: "Before the merge" }), " (Episodes " + season.firstScoredEpisode + "–" + (season.mergeEpisode - 1) + "): you score your Savu pick, your Toka pick and your Wildcard."),
+        h("p", null, h("b", { text: "After the merge" }), " (Episode " + season.mergeEpisode + " on): you score your two Merge picks. Your torches show how many are still in the game."),
+        h("p", { class: "muted", text: "A castaway earns the points below every time it happens in an episode." })),
+      h("div", { class: "rulegroups" }, groups.map(function (g) {
+        return h("div", { class: "rulegroup" }, h("h3", { text: g.name }),
+          h("ul", null, g.rules.map(function (r) {
+            return h("li", null, h("span", { class: "pv num" + (r.points < 0 ? " neg" : ""), text: fmt(r.points) }), h("span", { text: shortRule(r.label) }));
+          })));
+      })));
+  }
+
+  // ---- admin ----
+  var draft = null, epNum = null, showAll = false, status = null;
+
+  function sha256(text) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
+      return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    });
+  }
+  function isUnlocked() { return store("sessionStorage", UNLOCK_KEY) === "1"; }
+
+  function adminHeader(title, extra) {
+    return h("header", { class: "hero gutter" }, h("div", { class: "col", style: "max-width:1400px" },
+      h("div", { class: "brand" }, icon(TORCH_BIG), h("div", null, h("div", { class: "eyebrow", text: TITLE + " · Commissioner" }),
+        h("h2", { style: "font-size:clamp(34px,6vw,56px)", text: title }))),
+      extra || null));
+  }
+
+  function renderLogin() {
+    var msg = h("div", { class: "err", role: "alert" });
+    var input = h("input", { id: "admin-pass", type: "password", autocomplete: "current-password" });
+    root.replaceChildren(adminHeader("Commissioner"), h("div", { class: "gutter" }, h("div", { class: "adminwrap", style: "padding-bottom:48px" },
+      h("div", { class: "panel login" },
+        h("form", { onsubmit: function (e) {
+          e.preventDefault();
+          sha256(input.value).then(function (hex) {
+            if (hex === PASS_HASH) { store("sessionStorage", UNLOCK_KEY, "1"); route(); }
+            else { msg.textContent = "That password isn't right. Try again."; input.select(); }
+          }, function () { msg.textContent = "This browser can't check the password here."; });
+        } },
+          h("label", { for: "admin-pass", text: "Enter the commissioner password to score episodes." }),
+          input, h("button", { class: "btn primary", type: "submit", text: "Unlock" }), msg)),
+      h("a", { href: "#standings", text: "Back to standings" }))));
+    input.focus();
+  }
+
+  function startAdmin() {
+    if (!draft) {
+      draft = clone(season);
+      var saved = store("sessionStorage", DRAFT_KEY);
+      if (saved) {
+        if (saved === JSON.stringify(season)) store("sessionStorage", DRAFT_KEY, null); // last save landed
+        else status = { kind: "restore", saved: saved };
+      }
+    }
+    if (epNum == null || !findEp(epNum)) {
+      var firstEmpty = draft.episodes.filter(function (e) { return e.number >= draft.firstScoredEpisode && !Object.keys(e.events).length; })[0];
+      epNum = firstEmpty ? firstEmpty.number : draft.episodes[draft.episodes.length - 1].number;
+    }
+    renderAdmin();
+  }
+  function findEp(n) { return draft.episodes.filter(function (e) { return e.number === n; })[0]; }
+  function dirty() { return JSON.stringify(draft) !== JSON.stringify(season); }
+  function activeAt(c, n) { return c.eliminatedEpisode == null || c.eliminatedEpisode >= n; }
+  function epPoints(ep, name) {
+    var pts = {}; draft.rules.forEach(function (r) { pts[r.id] = r.points; });
+    var ev = ep.events[name] || {}, s = 0;
+    Object.keys(ev).forEach(function (k) { s += (pts[k] || 0) * ev[k]; });
+    return s;
+  }
+  function setCount(ep, name, rid, n) {
+    if (n > 0) { (ep.events[name] = ep.events[name] || {})[rid] = n; }
+    else if (ep.events[name]) { delete ep.events[name][rid]; if (!Object.keys(ep.events[name]).length) delete ep.events[name]; }
+  }
+
+  function renderAdmin() {
+    var ep = findEp(epNum);
+    var cols = draft.castaways.filter(function (c) { return showAll || activeAt(c, epNum); });
+    var surviveId = draft.rules[0].id;
+    var groups = [];
+    draft.rules.forEach(function (r) {
+      var g = r.points < 0 ? "Penalties" : r.points >= 20 ? "Endgame & big moments" : r.points + " points";
+      if (!groups.length || groups[groups.length - 1].name !== g) groups.push({ name: g, rules: [] });
+      groups[groups.length - 1].rules.push(r);
+    });
+    var totals = {};
+    function totalCell(c) { return (totals[c.name] = h("td", { class: "num", text: epPoints(ep, c.name) })); }
+    var saveBtn = h("button", { class: "btn primary", text: "Save Episode " + epNum + " scores", onclick: save });
+    var dirtyNote = h("span", { class: "muted" });
+    function refreshBar() {
+      var d = dirty();
+      saveBtn.disabled = !d;
+      dirtyNote.textContent = d ? "Unsaved changes" : "Everything is saved";
+    }
+
+    var statusEl = null;
+    if (status && status.kind === "restore") {
+      statusEl = h("div", { class: "panel" }, h("div", { text: "You have unsaved scoring from before the page reloaded." }),
+        h("div", { class: "row" },
+          h("button", { class: "btn primary", text: "Restore it", onclick: function () { draft = JSON.parse(status.saved); status = null; renderAdmin(); } }),
+          h("button", { class: "btn", text: "Discard it", onclick: function () { store("sessionStorage", DRAFT_KEY, null); status = null; renderAdmin(); } })));
+    } else if (status) {
+      statusEl = h("div", { class: status.kind === "error" ? "err" : "ok", role: "status", text: status.text });
+    }
+
+    root.replaceChildren(
+      adminHeader("Score Episode " + epNum, h("div", { class: "row" }, h("a", { href: "#standings", text: "View standings" }),
+        h("button", { class: "btn", text: "Lock", onclick: function () { store("sessionStorage", UNLOCK_KEY, null); route(); } }))),
+      h("div", { class: "gutter" }, h("div", { class: "adminwrap" },
+        statusEl,
+        h("div", { class: "panel" },
+          h("div", { class: "row" }, h("span", { class: "eyebrow", text: "Episode" }),
+            draft.episodes.filter(function (e) { return e.number >= draft.firstScoredEpisode; }).map(function (e) {
+              return h("button", { class: "btn tab", "aria-pressed": String(e.number === epNum), text: e.number,
+                onclick: function () { epNum = e.number; status = null; renderAdmin(); } });
+            }),
+            h("button", { class: "btn tab", text: "+ Episode " + (draft.episodes[draft.episodes.length - 1].number + 1), onclick: function () {
+              var n = draft.episodes[draft.episodes.length - 1].number + 1;
+              draft.episodes.push({ number: n, events: {} }); epNum = n; status = null; renderAdmin();
+            } })),
+          h("div", { class: "muted", text: epNum >= draft.mergeEpisode
+            ? "Post-merge episode: counts toward each player's two Merge picks."
+            : "Pre-merge episode: counts toward each player's Savu, Toka and Wildcard picks." }),
+          h("div", { class: "row" }, h("span", { class: "eyebrow", text: "Voted out this episode" }),
+            draft.castaways.filter(function (c) { return activeAt(c, epNum); }).map(function (c) {
+              var on = c.eliminatedEpisode === epNum;
+              return h("button", { class: "btn vote", "aria-pressed": String(on), text: c.name, onclick: function () {
+                c.eliminatedEpisode = on ? null : epNum;
+                if (!on) setCount(ep, c.name, surviveId, 0);
+                renderAdmin();
+              } });
+            })),
+          h("div", { class: "row" },
+            h("button", { class: "btn", text: "Mark everyone still in as survived", onclick: function () {
+              draft.castaways.forEach(function (c) {
+                if (activeAt(c, epNum) && c.eliminatedEpisode !== epNum) setCount(ep, c.name, surviveId, 1);
+              });
+              renderAdmin();
+            } }),
+            h("label", { class: "row muted" }, h("input", { id: "show-all", type: "checkbox", checked: showAll || null,
+              onchange: function (e) { showAll = e.target.checked; renderAdmin(); } }), "Show castaways already voted out"))),
+        h("div", { class: "scroll" }, h("table", { class: "grid" },
+          h("thead", null, h("tr", null, h("th", { class: "rule", text: "Rule" }), cols.map(function (c) { return h("th", { class: "c", text: c.name }); }))),
+          groups.map(function (g) {
+            return h("tbody", null, h("tr", { class: "group" }, h("td", { class: "rule", text: g.name }), h("td", { colspan: cols.length })),
+              g.rules.map(function (r) {
+                return h("tr", null,
+                  h("td", { class: "rule" }, h("span", { class: "pv" + (r.points < 0 ? " neg" : ""), text: fmt(r.points) }), shortRule(r.label)),
+                  cols.map(function (c) {
+                    var v = (ep.events[c.name] || {})[r.id] || 0;
+                    var inp = h("input", { id: "n-" + epNum + "-" + c.name.replace(/\W/g, "") + "-" + r.id, type: "number", inputmode: "numeric",
+                      min: "0", max: "20", value: v || "", class: v ? "has" : "", "aria-label": c.name + ": " + shortRule(r.label) });
+                    inp.addEventListener("input", function () {
+                      var n = Math.max(0, Math.min(20, parseInt(inp.value, 10) || 0));
+                      setCount(ep, c.name, r.id, n);
+                      inp.className = n ? "has" : "";
+                      totals[c.name].textContent = epPoints(ep, c.name);
+                      refreshBar();
+                    });
+                    return h("td", null, inp);
+                  }));
+              }));
+          }),
+          h("tfoot", null, h("tr", null, h("td", { class: "rule", text: "Episode " + epNum + " points" }), cols.map(totalCell))))))),
+      h("div", { class: "savebar" }, h("div", { class: "inner" }, dirtyNote,
+        h("div", { class: "row" },
+          h("button", { class: "btn", text: "Discard changes", onclick: function () { draft = clone(season); store("sessionStorage", DRAFT_KEY, null); status = null; if (!findEp(epNum)) epNum = null; startAdmin(); } }),
+          saveBtn))));
+    refreshBar();
+  }
+
+  // Off claude.ai there is no way for the page to save itself, so it hands the
+  // commissioner an updated copy of the page to upload to the host instead.
+  function downloadPage(doc) {
+    var a = h("a", { href: URL.createObjectURL(new Blob([doc], { type: "text/html" })), download: "index.html" });
+    document.body.append(a); a.click(); a.remove();
+  }
+
+  function save() {
+    var errs = S.validate(draft);
+    if (errs.length) { status = { kind: "error", text: "Can't save: " + errs.join("; ") }; return renderAdmin(); }
+    status = { kind: "ok", text: "Saving…" }; renderAdmin();
+    artifactCap.then(function (cap) {
+      if (!cap) {
+        downloadPage(renderDocument(draft));
+        season = clone(draft);
+        status = { kind: "ok", text: "Downloaded index.html with the new scores. Upload it to your host to replace the live page." };
+        return renderAdmin();
+      }
+      store("sessionStorage", DRAFT_KEY, JSON.stringify(draft));
+      return cap.publish(renderDocument(draft)).then(function () {
+        status = { kind: "ok", text: "Saved. Reloading with the new scores…" }; renderAdmin();
+      });
+    }).catch(function (e) {
+      var code = e && e.code;
+      var text =
+        code === "conflict" ? "Someone else saved first. The page is reloading; your changes can be restored after it does." :
+        code === "not_writer" || code === "not_granted" || code === "consent_required" || code === "capability_disabled" || code === "capability_removed"
+          ? "This view can't save. Only the page's owner or an editor can save scores, signed in on claude.ai." :
+        code === "rate_limited" ? "Saving too often. Wait a minute, then save again." :
+        "Saving failed (" + (code || "unknown error") + "). Your changes are still here; try again.";
+      if (code !== "conflict") store("sessionStorage", DRAFT_KEY, null);
+      status = { kind: "error", text: text }; renderAdmin();
+    });
+  }
+
+  function route() {
+    var hsh = location.hash.replace("#", "");
+    if (hsh === "admin") { if (isUnlocked()) startAdmin(); else renderLogin(); }
+    else renderPublic(hsh === "castaways" || hsh === "rules" ? hsh : "standings");
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body></html>
